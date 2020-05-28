@@ -1,25 +1,27 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import Routes from './routes'
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+
+    <body>
+
+      <div>
+        <h1 class="title" >Encontre, salve e faça.</h1>
+
+      </div>
+      <div class="container">
+        <Routes />
+      </div>
+      <footer>
+        <h4 class="text-center">CookBook</h4>
+        <h5 class="text-center">made with love by GLLL, 2020</h5>
+        <h6 class="text-center"> Frameworks utilizados: </h6>
+        <h6 class="text-center">React bootstrap</h6>
+      </footer>
+    </body>
+
+
   );
 }
 

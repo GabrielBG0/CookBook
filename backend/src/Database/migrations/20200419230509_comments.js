@@ -1,11 +1,12 @@
 exports.up = function (knex) {
-    return knex.schema.createTable('folder_content', function (table) {
+    return knex.schema.createTable('comment_list', function (table) {
         table.increments()
-        table.integer('folder_id').notNullable()
         table.integer('recipe_id').notNullable()
+        table.integer('user_id').notNullable()
+        table.string('comment').notNullable()
 
-        table.foreign('folder_id').references('id').inTable('folders')
         table.foreign('recipe_id').references('id').inTable('recipes')
+        table.foreign('user_id').references('id').inTable('users')
     })
 
 
