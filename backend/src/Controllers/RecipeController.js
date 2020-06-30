@@ -4,7 +4,10 @@ module.exports = {
 
     //função para criar uma nova receita
     async create(request, response) {
-        const { name, description, qtt, msr, ingr, prepare, image, video, category_id } = request.body
+        const { name, description, qtt, msr, ingr, prepare, prepTime, prepUnit, image, video, category_id, user_id, author } = request.body
+
+        const corte = "https://www.youtube.com/watch?v="
+        const videourl = "https://www.youtube.com/embed/" + video.substring(video.indexOf(corte) + corte.length)
 
         try {
             //nova receita é adiciaonada ao banco
@@ -13,10 +16,16 @@ module.exports = {
                 name,
                 description,
                 prepare,
+                prepTime,
+                prepUnit,
                 image,
-                video,
+                videourl,
                 category_id,
-                rating
+                prepTime,
+                prepUnit,
+                user_id,
+                rating,
+                author
             })
             const recipe_id = id
 
@@ -35,7 +44,6 @@ module.exports = {
             return response.json({ id })
 
         } catch (err) {
-            console.log(err)
             return response.json({ err: "Não foi possível adicionar receita" })
         }
     },
@@ -43,7 +51,17 @@ module.exports = {
     //função que retorna todas as receitas do banco
     async index(request, response) {
 
-        let recipes = await connection('recipes').select('*').orderBy('name')
+        let recipes = await connection('recipes').select('*').orderBy('recipes.name')
+        let aux = []
+        for (i = 0; i < recipes.length; i++) {
+            aux.push([recipes[i], await connection('ingredients').select('quantity', 'measure', 'ingredient').where('recipe_id', recipes[i].id)])
+        }
+        return response.json(aux)
+    },
+
+    async indexByUser(request, response) {
+        const{ user_id } = request.params
+        let recipes = await connection('recipes').select('*').where('user_id', user_id)
         let aux = []
         for (i = 0; i < recipes.length; i++) {
             aux.push([recipes[i], await connection('ingredients').select('quantity', 'measure', 'ingredient').where('recipe_id', recipes[i].id)])
@@ -52,11 +70,12 @@ module.exports = {
     },
 
     async getRecipe(request, response) {
-        const id = request.params
-        let recipes = await connection('recipes').select('*').where('id', id.id)
+        const { id } = request.params
+        let recipes = await connection('recipes')
+            .select('*').where('recipes.id', id)
         let aux = []
         aux.push(recipes)
-        aux.push(await connection('ingredients').select('quantity', 'measure', 'ingredient').where('recipe_id', id.id))
+        aux.push(await connection('ingredients').select('quantity', 'measure', 'ingredient').where('recipe_id', id))
         return response.json(aux)
     },
 
@@ -64,7 +83,8 @@ module.exports = {
     async filtered(request, response) {
         const { category } = request.params
 
-        let recipes = await connection('recipes').select('*').orderBy('name').where('category_id', category)
+        let recipes = await connection('recipes').select('*').orderBy('recipes.name')
+            .where('recipes.category_id', category)
         let aux = []
         for (i = 0; i < recipes.length; i++) {
             aux.push([recipes[i], await connection('ingredients').select('quantity', 'measure', 'ingredient').where('recipe_id', recipes[i].id)])
@@ -82,15 +102,23 @@ module.exports = {
     },
 
     async edit(request, response) {
-        const { id, name, description, prepare, image, video } = request.body
+        const { name, description, qtt, msr, ingr, prepare, prepTime, prepUnit, image, video, category_id, user_id, author } = request.body
 
         try {
             await connection('recipe').where('id', id).update({
                 name: name,
                 description: description,
+                qtt: qtt,
+                msr: msr,
+                ingr: ingr,
                 prepare: prepare,
+                prepTime: prepTime,
+                prepUnit: prepUnit,
                 image: image,
-                video: video
+                video: video,
+                category_id: category_id,
+                user_id: user_id,
+                author: author
             })
         } catch (e) {
             return response.json({ erro: 'não foi possível editar a receita' })
@@ -100,7 +128,7 @@ module.exports = {
     },
 
     async recipesByStars(request, response) {
-        let recipes = await connection('recipes').select('*').orderBy('rating')
+        let recipes = await connection('recipes').select('*').orderBy('recipes.rating', 'desc')
         let aux = []
         for (i = 0; i < recipes.length; i++) {
             aux.push([recipes[i], await connection('ingredients').select('quantity', 'measure', 'ingredient').where('recipe_id', recipes[i].id)])
@@ -110,16 +138,23 @@ module.exports = {
 
     async rating(request, response) {
         const { id, nStars } = request.body
+        if (typeof nStars === 'number') {
+            let oldRating = await connection('recipes').select('rating').where('id', id)
+            oldRating = Object.values(oldRating[0])
 
-        let oldRating = await connection('recipes').select('rating').where('id', id)
-        oldRating = Object.values(oldRating[0])
-        const newRating = Number(oldRating) + Number(nStars)
-        console.log(oldRating)
-        console.log(newRating)
-        try {
-            await connection('recipes').where('id', id).update('rating', newRating)
-            return response.status(204).send()
-        } catch (e) {
+            var newRating
+            if (oldRating != 0) {
+                newRating = (Number(oldRating) + Number(nStars)) / 2
+            } else {
+                newRating = nStars
+            }
+            try {
+                await connection('recipes').where('id', id).update('rating', newRating)
+                return response.status(204).send()
+            } catch (e) {
+                return response.json({ error: 'não foi possivel realizar essa operação' })
+            }
+        } else {
             return response.json({ error: 'não foi possivel realizar essa operação' })
         }
     }

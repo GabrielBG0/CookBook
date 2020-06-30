@@ -1,112 +1,145 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useHistory } from 'react-router-dom'
-import { Navbar, NavDropdown, Brand, Nav, Form, FormControl, Button, Image, Card, Container, Row, Col, CardDeck, Media, Badge } from 'react-bootstrap/'
-import logoImg from '../../assets/img/logo-white.png'
-import sushi from '../../assets/img/sushi.jpg'
-import pizza from '../../assets/img/pizza.jpg'
-import hamburguer from '../../assets/img/hamburguer.jpg'
-import salmao from '../../assets/img/bg-salmao.png'
-import bg from '../../assets/img/food-background.jpg'
-import { BrowserRouter as Router } from 'react-router-dom';
-import { FaSearch } from 'react-icons/fa'
+import { Nav, Form, Button, Image, Row, Col, Modal } from 'react-bootstrap/'
+import user from '../../assets/img/user-icon.png'
 import { FaPlusCircle } from 'react-icons/fa'
 import { FaPen } from 'react-icons/fa'
-
-
+import Nbar from '../NavBar/NavBar'
+import api from '../../services/api'
 
 
 export default function Profile() {
+
+
+    var userName = localStorage.getItem('name');
+    const history = useHistory();
+    const [showAdd, setShowAdd] = useState(false)
+    const handleShowAdd = () => setShowAdd(true)
+    const [folder_name, setFolderName] = useState('')
+    const [folders, setFolders] = useState([])
+
+
+    useEffect(() => {
+        async function fetchData() {
+            const response = await api.get('/folders')
+            setFolders(response.data)
+        }
+        fetchData()
+    }, [folders])
+
+
+    if (!localStorage.getItem('id')) {
+        alert("Você precisa estar logado para ter acesso ao perfil!")
+        history.push('/login')
+    }
+
+    async function handleDelete(e) {
+        e.preventDefault()
+        try {
+            api.delete('/recipe/') //TO DO
+        } catch (error) {
+            alert("Erro ao excluir receita")
+        }
+    }
+
+    function handleCloseAdd() {
+        setShowAdd(false)
+    }
+
+    async function handleFolder() {
+        setShowAdd(false)
+
+        try {
+            if (localStorage.getItem('id')) {
+                const user_id = localStorage.getItem('id')
+                const response = await api.post('/folders', { user_id, folder_name })
+            }
+
+        } catch (error) {
+            alert("Erro ao adicionar pasta.")
+        }
+
+    }
+
     {
         return (
-    <>
-                 <Navbar variant="dark" fixed = "top" expand="lg">
-                    <Navbar.Brand href="#home">
-                        <img src={logoImg} alt="" />
-                    </Navbar.Brand>
-                    <Navbar.Toggle aria-controls="basic-navbar-nav" />
-                    <Navbar.Collapse id="basic-navbar-nav">
-                        <Nav className="mr-auto">
-
-                            <FormControl type="text" placeholder="Search" className="mr-sm-2" />
-                            <Button id="search" variant="flat">
-                                <FaSearch size={20} color="#FF0000" fontWeight="bolder" />
-                            </Button>
-
-                            <Nav.Link href="#home" >Início</Nav.Link>
-                            <NavDropdown title="Receitas" id="basic-nav-dropdown">
-                                <NavDropdown.Item href="#action/3.1" variant="dark">Asiática</NavDropdown.Item>
-                                <NavDropdown.Item href="#action/3.2">Brasileira</NavDropdown.Item>
-                                <NavDropdown.Item href="#action/3.3">Mexicana</NavDropdown.Item>
-                                <NavDropdown.Item href="#action/3.4">Pratos rápidas</NavDropdown.Item>
-                                <NavDropdown.Item href="#action/3.5">Low Carb</NavDropdown.Item>
-                            </NavDropdown>
-                            <Button id="submitnav" variant="flat">
-                                Submeter receita
-                            </Button>
-                        </Nav>
-                    </Navbar.Collapse>
-                </Navbar>
-
-              
-                    <Row>
-                        <Image className = "foto"
-                              width={150}
-                              height={150}
-                              src={hamburguer} 
-                              roundedCircle
-                            />
-                    </Row>
-                    <Row>
-                        <Col></Col>
-                        <Col>
-                            <h5 class = "title-section-profile">Nome Completo</h5>
-                        </Col>
-                        <Col>
-                            <Button variant = "flat" id = "Edit" >
+            <>
+                {Nbar(true)}
+                <Row className="justify-md-center">
+                    <Col xs="auto">
+                        <Image className="foto"
+                            width={120}
+                            height={120}
+                            src={user}
+                            roundedCircle
+                        />
+                    </Col>
+                </Row>
+                <Row>
+                    <Col></Col>
+                    <Col>
+                        <h5 class="title-section-profile">{userName}</h5>
+                    </Col>
+                    <Col>
+                        <Link>
+                            <Button variant="flat" id="Edit" >
                                 <FaPen size={20} color="#FF0000" fontWeight="bolder" />
                             </Button>
+                        </Link>
+                    </Col>
+                </Row>
+
+                <Nav className="navPill" variant="pills" defaultActiveKey="/profile">
+                    <Nav.Item>
+                        <Nav.Link href="/profile">Receitas salvas</Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                        <Nav.Link href="/profilesubmited">Receitas submetidas</Nav.Link>
+                    </Nav.Item>
+                </Nav>
+
+                <Button variant="flat" id="addFolder" onClick={handleShowAdd} size="sm"><FaPlusCircle size={30} color="#FF0000" fontWeight="bolder" /></Button>
+                <Modal show={showAdd} onHide={handleCloseAdd}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Digite um nome para a sua nova pasta:</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <div>
+                            <Form>
+                                <Row>
+                                    <Col>
+                                        <Form.Control
+                                            placeholder="Escreva aqui..."
+                                            value={folder_name}
+                                            onChange={e => setFolderName(e.target.value)} />
+                                    </Col>
+                                </Row>
+                            </Form>
+                        </div>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="flat" block type="submit" onClick={handleFolder}>
+                            Criar pasta
+                                            </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                <Row>
+                    {folders.map(folder =>
+                        <Col>
+                            <Link to={"/folder/" + folder.id}>
+                                <Button id=" " block variant="flat"> {folder.folder_name}</Button>
+                            </Link>
                         </Col>
-                    </Row>
-            
-                        <Nav className = "navPill" variant="pills" defaultActiveKey="/profile">
-                            <Nav.Item>
-                                <Nav.Link href="/profile">Receitas salvas</Nav.Link>
-                            </Nav.Item>
-                            <Nav.Item>
-                                <Nav.Link href="/profilesubmited">Receitas submetidas</Nav.Link>
-                            </Nav.Item>
-                        </Nav>
+                    )}
+                </Row>
 
 
-                        
-                            <Button variant = "flat" id = "addFolder" >
-                                <FaPlusCircle size={30} color="#FF0000" fontWeight="bolder" />
-                            </Button>
+            </>
 
 
-
-                            
-                        <Row>
-                            <Col><Button id = " " block variant = "flat"> Comida japonesa </Button></Col>
-                            <Col><Button id = " " block variant = "flat"> Comida brasileira </Button></Col>
-                            <Col><Button id = " " block variant = "flat"> Doces </Button></Col>
-                        </Row>
-                        <Row><p></p></Row>
-                        <Row>
-                            <Col><Button id = " " block variant = "flat"> Pizzas </Button></Col>
-                            <Col><Button id = " " block variant = "flat"> Comida coreana </Button></Col>
-                            <Col><Button id = " " block variant = "flat"> Ideias de lanches </Button></Col>
-                        </Row>
-       
-                
-                
-
-    </>
-
-            
         )
     }
 }
 
 
-      
